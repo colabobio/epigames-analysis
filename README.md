@@ -9,6 +9,10 @@ Analysis of the simulation data. Run the notebooks in order:
 * 5-tensor-factorization
 * 6-risk-prediction
 
+Data can be downloaded from the following Zenodo repository:
+
+https://zenodo.org/records/10674401
+
 ## Creating conda environment
 
 The file requirements.txt list all the packages needed by these notebooks. It is recommended to use conda to create an environment with all this packages. 
