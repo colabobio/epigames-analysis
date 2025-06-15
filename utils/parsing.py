@@ -194,3 +194,11 @@ def get_modifier_count(events, name):
 
 def get_info_count(events, name):
     return len(events[(events["inf"] == name)])
+
+def get_info_users(events, name):
+    sel_events = events[(events["inf"] == name)]
+    return sel_events["user_id"].tolist()
+
+def get_node_index(users, user_index, node_labels):
+    idxs = [user_index[x] for x in users]
+    return [node_labels.index(x) for x in idxs if x in node_labels]    
