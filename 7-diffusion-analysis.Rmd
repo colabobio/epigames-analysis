@@ -1,0 +1,62 @@
+---
+title: "Applying netdiffuseR to OO-WKU epi game data"
+---
+
+```{r setup, include=FALSE}
+library(netdiffuseR)
+library(Matrix)
+```
+
+This uses the netdiffuseR package:
+
+Homepage: https://github.com/USCCANA/netdiffuseR
+
+Workshop: https://usccana.github.io/netdiffuser-workshop/
+
+Make sure to run the data parsing notebook in Jupyter first to generate the network_i.mtx and network_data.csv files.
+
+```{r}
+network_list <- lapply(1:15, function(i) {
+  as(readMM(paste0("network_", i, ".mtx")), "CsparseMatrix")
+})
+names(network_list) <- as.character(1:15)
+```
+
+```{r}
+edge_list <- adjmat_to_edgelist(network_list)
+edge_list[0:10,]
+```
+
+```{r}
+net_dat <- read.csv('network_data.csv')
+net_dat
+```
+
+```{r}
+wku_diffnet <- edgelist_to_diffnet(
+  # The edgelist
+  edgelist = edge_list[,1:2],
+  t0       = edge_list[,"time"],
+  # The dataframe
+  dat      = net_dat,
+  idvar    = "idnum",
+  #netvars  = c("qyes", "qno", "mask", "med"),
+  timevar  = "time",
+  toavar   = "tinf"
+)
+```
+
+```{r}
+plot_diffnet(wku_diffnet)
+```
+```{r}
+summary(wku_diffnet)
+```
+
+```{r}
+# Computing exposure
+coh <- exposure(wku_diffnet)
+
+# See results
+head(round(coh, 2))
+```
