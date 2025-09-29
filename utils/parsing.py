@@ -5,7 +5,7 @@ import networkx as nx
 # Data parsing functions
 
 # It calculates the weights in minutes
-def get_contact_list(user_index, events, infections, def_contact_time, print_data_warnings=False, use_new_id_schema=True):
+def get_contact_list(user_index, events, infections, def_contact_time, uuid_to_id=None, data_format=2, print_data_warnings=False):
     mili_to_seconds = 60 * 1000
     
     contacts = events[events["type"] == "contact"]
@@ -18,14 +18,15 @@ def get_contact_list(user_index, events, infections, def_contact_time, print_dat
     for id0, id1, l01 in zip(node0, node1, length):
         n0 = user_index[id0]
         n1 = -1
-        if use_new_id_schema:
+        if 0 < data_format:
             if id1 in user_index:
                 n1 = user_index[id1]
             elif print_data_warnings:
                 print("Cannot find peer", id1)
         else:
-            if id1 in p2pToId:
-                n1 = user_index[p2pToId[id1]]
+            # Old format (sims before 2022): p2p id is in the infection column
+            if id1 in uuid_to_id:
+                n1 = user_index[uuid_to_id[id1]]
             elif print_data_warnings:
                 print("Cannot find peer", id1)
     
@@ -56,7 +57,7 @@ def get_contact_list(user_index, events, infections, def_contact_time, print_dat
 
     return clist
 
-def get_infection_list(user_index, events, discard_reinfections, time_delta_sec, use_new_id_schema=True):
+def get_infection_list(user_index, events, discard_reinfections, time_delta_sec, uuid_to_id=None, data_format=2, print_data_warnings=False):
     infections = events[(events["type"] == "infection")]
     
     ilist = []
@@ -68,7 +69,7 @@ def get_infection_list(user_index, events, discard_reinfections, time_delta_sec,
         n1 = user_index[id1]
             
         if "PEER" in peer0:
-            if use_new_id_schema:
+            if 0 < data_format:
                 # New schema
                 id0 = int(peer0[peer0.index("[") + 1:peer0.index(":")])
                 if id0 in user_index:
@@ -96,10 +97,10 @@ def get_infection_list(user_index, events, discard_reinfections, time_delta_sec,
                 elif print_data_warnings:
                     print("Cannot find peer", id0)                    
             else:    
-                # Old schema (sims before 2022): p2p id is in the infection column
+                # Old format (sims before 2022): p2p id is in the infection column
                 p2p0 = peer0[peer0.index("[") + 1:peer0.index(":")]
-                if p2p0 in p2pToId:
-                    id0 = p2pToId[p2p0]
+                if p2p0 in uuid_to_id:
+                    id0 = uuid_to_id[p2p0]
                     if id0 in user_index:
                         n0 = user_index[id0]
                         if not (n0, n1) in ilist:                        
@@ -111,7 +112,7 @@ def get_infection_list(user_index, events, discard_reinfections, time_delta_sec,
             
     return ilist 
 
-def get_node_state(user_index, events, state0, print_data_warnings=False):
+def get_node_state(user_index, events, state0, uuid_to_id=None, data_format=2, print_data_warnings=False):
     if state0 == None:
         state = [0] * len(user_index)
     else:
@@ -126,12 +127,24 @@ def get_node_state(user_index, events, state0, print_data_warnings=False):
             state[idx] = 1
         if "PEER" in src:
             state[idx] = 2
-            id0 = int(src[5:].split(":")[0])
-            idx0 = user_index[id0]       
-            if state[idx0] == 0:
-                state[idx0] = 1
-                if print_data_warnings:
-                    print("Infecting peer did not have correct state", idx0)
+
+            id0_str = src[5:].split(":")[0]
+            if data_format == 0:
+                if id0_str in uuid_to_id:
+                    id0 = uuid_to_id[id0_str]
+                else:
+                    id0 = -1
+                    if print_data_warnings:
+                        print("Cannot find ID of infecting peer given its UUID", id0_str)
+            else:
+                id0 = int(id0_str)
+
+            if -1 < id0:
+                idx0 = user_index[id0]       
+                if state[idx0] == 0:
+                    state[idx0] = 1
+                    if print_data_warnings:
+                        print("Infecting peer did not have correct state", idx0)
 
     out = events[events["type"] == "outcome"]
     outMap = pd.Series(out.out.values, index=out.user_id).to_dict()
