@@ -1,17 +1,14 @@
-# OO WKU 2023 simulation
+# Analysis of epigames datasets
 
-Analysis of the simulation data. Run the notebooks in order:
+Analysis of the simulation data. Run the following Jupyter notebooks in order:
 
 * 1-data-parsing
 * 2-network-properties
-* 3-behavioral-analysis
-* 4-super-spreader-analysis
-* 5-tensor-factorization
-* 6-risk-prediction
+* 3-super-spreader-analysis
 
-Data can be downloaded from the following Zenodo repository:
+The diffusion analysis needs be run in R:
 
-https://zenodo.org/records/10674401
+* 4-risk-prediction
 
 ## Creating conda environment
 
@@ -24,12 +21,12 @@ https://docs.anaconda.com/free/miniconda/
 Clone this repo:
 
 ```
-git clone https://github.com/colabobio/oo-wku23.git
+git clone https://github.com/colabobio/epigames-analysis.git
 ```
 
 And the create the environment installing the listed requirements from the conda-forge channel:
 
 ```
-cd oo-wku23
-conda create --name oo --file requirements.txt --channel conda-forge
+cd epigames-analysis
+conda create --name epigames --file requirements.txt --channel conda-forge
 ```
