@@ -1,5 +1,5 @@
 python==3.13.5
-jupyterlab==4.4.3
+jupyterlab==4.4.9
 numpy==2.3.0
 pandas==2.3.0
 pyarrow==20.0.0
@@ -13,3 +13,5 @@ seaborn==0.13.2
 tensorly==0.8.2
 joblib==1.5.1
 ffmpeg==7.1.1
+json==2.0.9
+biopython==1.85

@@ -117,13 +117,15 @@ def get_node_state(user_index, events, state0, uuid_to_id=None, data_format=2, p
         state = [0] * len(user_index)
     else:
         state = state0
-
+    
     inf = events[events["type"] == "infection"]
     infMap = pd.Series(inf.inf.values, index=inf.user_id).to_dict()
     for kid in infMap:
         src = infMap[kid]
         idx = user_index[kid]
         if "CASE0" in src:
+            state[idx] = 1
+        if "SOURCE" in src:
             state[idx] = 1
         if "PEER" in src:
             state[idx] = 2
