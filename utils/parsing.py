@@ -52,8 +52,38 @@ def get_contact_list(user_index, events, infections, def_contact_time, uuid_to_i
         else:
             p01 = (n1, n0)
         if not p01 in clist:
-            clist[p01] = def_contact_time
+            if 0 < def_contact_time:
+                clist[p01] = def_contact_time
             if print_data_warnings: print("Cannot find contact between", n0, "and", n1)            
+
+    return clist
+
+def get_raw_contact_list(user_index, events, uuid_to_id=None, data_format=2, print_data_warnings=False):
+    contacts = events[events["type"] == "contact"]
+
+    node0 = contacts.user_id.values
+    node1 = contacts.peer_id.values
+    time = contacts.time.values    
+    length = contacts.contact_length.values
+
+    clist = []
+    for id0, id1, t, l in zip(node0, node1, time, length):
+        n0 = user_index[id0]
+        n1 = -1
+        if 0 < data_format:
+            if id1 in user_index:
+                n1 = user_index[id1]
+            elif print_data_warnings:
+                print("Cannot find peer", id1)
+        else:
+            # Old format (sims before 2022): p2p id is in the infection column
+            if id1 in uuid_to_id:
+                n1 = user_index[uuid_to_id[id1]]
+            elif print_data_warnings:
+                print("Cannot find peer", id1)
+    
+        if -1 < n1:
+            clist += [(n0, n1, t, l)]
 
     return clist
 
