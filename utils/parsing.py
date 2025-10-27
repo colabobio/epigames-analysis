@@ -1,5 +1,6 @@
 from datetime import timedelta
 import pandas as pd
+import numpy as np
 import networkx as nx
 
 # Data parsing functions
@@ -191,6 +192,100 @@ def get_node_state(user_index, events, state0, uuid_to_id=None, data_format=2, p
             state[idx] = 5
     
     return state
+
+def get_user_name(users, uid, data_format=2):
+    col = 'generated_id' if data_format == 1 else 'random_id'
+    return users[users['id'] == uid][col].values[0]
+
+def get_all_infection_events(events, users, tmin, data_format=2, print_data_warnings=False):
+    etype = []
+    user0 = []
+    user1 = []
+    etime = []
+    
+    infections = events[(events["type"] == "infection")]
+    
+    ilist = []
+    itimes = {}
+    infected = infections.user_id.values
+    peers = infections.inf.values
+    timestamp = infections.time.values
+    for id1, peer0, ts in zip(infected, peers, timestamp):      
+        tinf_minutes = round((ts-tmin)/60, 2)
+        if "PEER" in peer0:
+            id0 = None
+            if 0 < data_format:
+                # New schema
+                id0 = int(peer0[peer0.index("[") + 1:peer0.index(":")])                
+            else:    
+                # Old format (sims before 2022): p2p id is in the infection column
+                p2p0 = peer0[peer0.index("[") + 1:peer0.index(":")]
+                if p2p0 in uuid_to_id:
+                    id0 = uuid_to_id[p2p0]
+            if id0: 
+                etype += ['person-to-person infection']
+                user0 += [get_user_name(users, id0, data_format)]
+                user1 += [get_user_name(users, id1, data_format)]
+                etime += [tinf_minutes]                
+            if print_data_warnings:
+                print('Cannot infecting peer of', id1)
+        else: 
+            etype += ['index case infection']
+            user0 += [np.nan]
+            user1 += [get_user_name(users, id1, data_format)]
+            etime += [tinf_minutes]
+
+    return pd.DataFrame({'Event': etype, 'Infector': user0, 'Infected': user1, 'Time': etime})
+
+def get_all_illness_and_outcome_events(events, users, tmin, data_format=2):
+    etype = []
+    euser = []
+    etime = []
+    
+    illness = events[(events["type"] == "illness")]
+    userid = illness.user_id.values
+    info = illness.inf.values
+    timestamp = illness.time.values
+    for uid, info, ts in zip(userid, info, timestamp):
+        till_minutes = round((ts-tmin)/60, 2)
+        if info == 'symptomatic':
+            etype += ['Started showing symptoms']
+        elif info == 'asymptomatic':
+            etype += ['Stopped showing symptoms']
+        else:
+            etype += ['Unknown']            
+        euser += [get_user_name(users, uid, data_format)]
+        etime += [till_minutes]
+
+    outcomes = events[(events["type"] == "outcome")]
+    userid = outcomes.user_id.values
+    userout = outcomes.out.values
+    timestamp = outcomes.time.values
+    for uid, info, ts in zip(userid, userout, timestamp):
+        out_minutes = round((ts-tmin)/60, 2)
+        etype += [info.capitalize()] 
+        euser += [get_user_name(users, uid, data_format)]
+        etime += [out_minutes]
+
+    if data_format == 1:
+        # Add vaccination events from OO Prod sims
+        vaccine = events[(events["type"] == "vaccine")]
+        userid = vaccine.user_id.values
+        vaxinfo = vaccine.inf.values
+        timestamp = vaccine.time.values
+        for uid, info, ts in zip(userid, vaxinfo, timestamp):
+            vax_minutes = round((ts-tmin)/60, 2)
+            if info == 'immunized':
+                edesc = 'Vaccinated and immunized'
+            elif info == 'notImmunized':
+                edesc = 'Vaccinated and NOT immunized'
+            else:
+                edesc = 'Unknown'            
+            etype += [edesc] 
+            euser += [get_user_name(users, uid, data_format)]
+            etime += [vax_minutes]        
+    
+    return pd.DataFrame({'Event': etype, 'user': euser, 'Time': etime})
 
 # Some utilities
 
