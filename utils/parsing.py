@@ -88,6 +88,43 @@ def get_raw_contact_list(user_index, events, uuid_to_id=None, data_format=2, pri
 
     return clist
 
+def get_raw_infection_list(user_index, events, uuid_to_id=None, data_format=2, print_data_warnings=False):
+    infections = events[(events["type"] == "infection")]
+    
+    node1 = infections.user_id.values
+    peers = infections.inf.values
+    time = infections.time.values
+
+    ilist = []
+    for id1, peer0, t in zip(node1, peers, time):
+        n0 = -1
+        n1 = user_index[id1]
+        ientry = ()
+        if "PEER" in peer0:
+            id0 = None            
+            if 0 < data_format:
+                # New schema
+                id0 = int(peer0[peer0.index("[") + 1:peer0.index(":")])                
+            else:    
+                # Old format (sims before 2022): p2p id is in the infection column
+                p2p0 = peer0[peer0.index("[") + 1:peer0.index(":")]
+                if p2p0 in uuid_to_id:
+                    id0 = uuid_to_id[p2p0]
+            if id0 in user_index:
+                n0 = user_index[id0]
+            elif print_data_warnings:
+                print("Cannot find peer", id0)
+            ientry = ('p2p', n0, n1, t)
+        else:
+            ientry = ('idx', None, n1, t)
+
+        if not ientry in ilist:
+            ilist += [ientry]
+        elif print_data_warnings:      
+            print('Duplicate infection entry', ientry)
+
+    return ilist
+
 def get_infection_list(user_index, events, discard_reinfections, time_delta_sec, uuid_to_id=None, data_format=2, print_data_warnings=False):
     infections = events[(events["type"] == "infection")]
     
@@ -206,7 +243,6 @@ def get_all_infection_events(events, users, tmin, data_format=2, print_data_warn
     infections = events[(events["type"] == "infection")]
     
     ilist = []
-    itimes = {}
     infected = infections.user_id.values
     peers = infections.inf.values
     timestamp = infections.time.values
@@ -288,6 +324,22 @@ def get_all_illness_and_outcome_events(events, users, tmin, data_format=2):
     return pd.DataFrame({'Event': etype, 'user': euser, 'Time': etime})
 
 # Some utilities
+
+# https://stackoverflow.com/a/31852401
+def load_properties(filepath, sep='=', comment_char='#'):
+    """
+    Read the file passed as parameter as a properties file.
+    """
+    props = {}
+    with open(filepath, "rt") as f:
+        for line in f:
+            l = line.strip()
+            if l and not l.startswith(comment_char):
+                key_value = l.split(sep)
+                key = key_value[0].strip()
+                value = sep.join(key_value[1:]).strip().strip('"') 
+                props[key] = value 
+    return props
 
 # https://stackoverflow.com/a/48938464
 def hour_rounder(t):
