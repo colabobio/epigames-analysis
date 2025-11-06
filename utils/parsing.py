@@ -125,6 +125,26 @@ def get_raw_infection_list(user_index, events, uuid_to_id=None, data_format=2, p
 
     return ilist
 
+def get_raw_outcome_list(user_index, events, print_data_warnings=False):
+    outcomes = events[(events["type"] == "outcome")]
+
+    userid = outcomes.user_id.values
+    userout = outcomes.out.values
+    timestamp = outcomes.time.values
+
+    olist = []
+    for uid, info, ts in zip(userid, userout, timestamp):
+        uidx = user_index[uid]
+        
+        oentry = (uidx, info, ts)
+
+        if not oentry in olist:
+            olist += [oentry]
+        elif print_data_warnings:      
+            print('Duplicate outcome entry', oentry)
+            
+    return olist    
+
 def get_infection_list(user_index, events, discard_reinfections, time_delta_sec, uuid_to_id=None, data_format=2, print_data_warnings=False):
     infections = events[(events["type"] == "infection")]
     
