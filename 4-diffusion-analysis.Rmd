@@ -17,7 +17,7 @@ Make sure to run the data parsing notebook in Jupyter first to generate the netw
 
 ```{r}
 network_list <- lapply(1:15, function(i) {
-  as(readMM(paste0("data/network_", i, ".mtx")), "CsparseMatrix")
+  as(readMM(paste0("data/165/network_", i, ".mtx")), "CsparseMatrix")
 })
 names(network_list) <- as.character(1:15)
 ```
@@ -28,7 +28,7 @@ edge_list[0:10,]
 ```
 
 ```{r}
-net_dat <- read.csv('data/network_data.csv')
+net_dat <- read.csv('data/165/network_data.csv')
 net_dat
 ```
 
